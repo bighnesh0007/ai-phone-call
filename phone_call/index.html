@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Recognition</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <h1>Voice Recognition</h1>
+
+    <label for="language">Choose Language:</label>
+    <select id="language">
+        <option value="en-GB">English (UK)</option>
+        <option value="en-US">English (US)</option>
+        <option value="es-ES">Spanish</option>
+        <option value="fr-FR">French</option>
+        <!-- Add more languages as needed -->
+    </select>
+
+    <textarea placeholder="Your voice message is here" name="text" id="speechToText" cols="50" rows="5"></textarea>
+    <div>
+        <button onclick="startVoiceRecognition()">Start Speaking</button>
+        <button onclick="stopVoiceRecognition()">Stop Speaking</button>
+        <button onclick="clearText()">Clear Text</button>
+    </div>
+
+    <textarea placeholder="Gemine AI response" name="gemineResponse" id="gemineResponse" cols="50" rows="5"></textarea>
+
+    <script>
+        var recognition;
+
+        function startVoiceRecognition() {
+            var selectedLanguage = document.getElementById("language").value;
+
+            if (!('webkitSpeechRecognition' in window)) {
+                alert("Sorry, your browser doesn't support speech recognition.");
+                return;
+            }
+
+            recognition = new webkitSpeechRecognition();
+            recognition.lang = selectedLanguage;
+
+            recognition.onresult = function(event) {
+                console.log(event);
+                document.getElementById("speechToText").value = event.results[0][0].transcript;
+            };
+
+            recognition.onerror = function(event) {
+                console.error(event);
+                alert("Error occurred during speech recognition: " + event.error);
+            };
+
+            recognition.onend = function() {
+                console.log("Speech recognition service disconnected");
+            };
+
+            recognition.start();
+        }
+
+        function stopVoiceRecognition() {
+            if (recognition) {
+                recognition.stop();
+                sendToGemine();
+            }
+        }
+
+        function clearText() {
+            document.getElementById("speechToText").value = "";
+            document.getElementById("gemineResponse").value = "";
+        }
+
+        function sendToGemine() {
+            var transcript = document.getElementById("speechToText").value;
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'https://api.gemine.ai/v1/predict', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    document.getElementById("gemineResponse").value = response.response;
+                } else {
+                    alert('Error sending request to Gemine AI');
+                }
+            };
+
+            xhr.send(JSON.stringify({ 'input': transcript }));
+        }
+    </script>
+</body>
+
+</html>
